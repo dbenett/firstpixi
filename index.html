@@ -1,0 +1,228 @@
+<!DOCTYPE HTML>
+<html>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+    <head>
+        <title>pixi.js example 1</title>
+        <h1> Hello! </h1>
+        
+
+        <style>
+            body {
+                margin-left: 30px;
+                padding: 0;
+            }
+            .row {
+                margin-bottom: 15px;
+            }
+
+
+        </style>
+        <script src="pixi.js/bin/pixi.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    </head>
+    <body>
+    <div class="row">
+      <div class="col-lg-2">
+        <div class="input-group">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button" onClick="changeSquareSize(document.getElementById('squareSize').value)">Set Square Size</button>
+          </span>
+          <input id="squareSize" type="text" class="form-control" placeholder="10">
+        </div><!-- /input-group -->
+      </div><!-- /.col-lg-6 -->
+      <div class="col-lg-2">
+        <div class="input-group">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button" onClick="changeRadius(document.getElementById('radius').value)">Set Radius Size</button>
+          </span>
+          <input id="radius" type="text" class="form-control" placeholder="15">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-2">
+        <div class="input-group">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button" onClick="changeWidth(document.getElementById('width').value)">Set Width</button>
+          </span>
+          <input id="width" type="text" class="form-control" placeholder="600">
+        </div><!-- /input-group -->
+      </div><!-- /.col-lg-6 -->
+      <div class="col-lg-2">
+        <div class="input-group">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button" onClick="changeHeight(document.getElementById('height').value)">Set Height</button>
+          </span>
+          <input id="height" type="text" class="form-control" placeholder="500">
+        </div>
+      </div>
+    </div>
+
+    <script>
+    /* Danny Benett -- June 2015 
+       pixi.js visualization */
+
+    // create a new instance of a pixi stage
+    var WIDTH = 600;
+    var HEIGHT = 500;
+    var SQ_SIZE = 10;
+    var RADIUS_SCALE = 15;
+
+    // create a renderer instance.
+    var renderer = PIXI.autoDetectRenderer(WIDTH, HEIGHT);
+    var SKY = 0;
+
+    // set default mouse pos offscreen (far enough that it won't have an effect), set mouseClicked to false by default
+    var mouseCurr = {x: -2*SQ_SIZE*RADIUS_SCALE, y:-2*SQ_SIZE*RADIUS_SCALE};
+    var mouseClicked = false;
+
+    // add the renderer view element to the DOM
+    document.body.appendChild(renderer.view);
+
+    var stage = new PIXI.Container();
+
+
+    // draw squares
+    var squares = [];
+    var moved = [];
+    initializeSquares();
+
+    requestAnimationFrame( animate );
+
+    // fill up the squares 2d array as necessary for current width/height/size
+    function initializeSquares() {
+        squares = [];
+        for (var p = 0; (p*SQ_SIZE) < WIDTH; p++) {
+            squares[p] = [];
+            for (var i = 0; (i * SQ_SIZE + SKY) < HEIGHT; i++) {
+                curr = new PIXI.Graphics();
+                curr.lineStyle(2, 0x0000FF, 1);
+                curr.drawRect(p*SQ_SIZE, SKY + SQ_SIZE*i, SQ_SIZE, SQ_SIZE);
+                curr.absX = p * SQ_SIZE;
+                curr.absY = i * SQ_SIZE + SKY;
+                stage.addChild(curr);
+                squares[p].push(curr);
+            }
+        }
+        // only need to attach one mouse listener, and I've attached that to the upper
+        // left corner box and and given it a hit area of the entire stage so user can click anywhere
+        squares[0][0].interactive = true;
+        squares[0][0].hitArea = new PIXI.Rectangle(0, 0, WIDTH, HEIGHT);
+        squares[0][0].on('mousemove', onMouseMove);
+        squares[0][0].on('touchmove', onMouseMove);
+        squares[0][0].on('mousedown', onMouseDown);
+    }
+
+
+    // runs every frame to animate
+    function animate() {
+        // reset position of all squares that have moved -- simple operation
+        for (var i = 0; i < moved.length; i++) {
+            moved[i].position.x = 0;
+            moved[i].position.y = 0;
+        }
+        moved = [];
+
+        // set mins and maxes based on the square of width and height 2r that contains the circle that will be effected
+        var minX = Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
+        var maxX = Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares.length ? Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares.length;
+        var minY = Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
+        var maxY = Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares[0].length ? Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares[0].length;
+        // check all boxes in that square to see if they are in the circl
+        for (var p = minX; p < maxX; p++) {
+            for (var i = minY; i < maxY; i++) {
+                var curr = squares[p][i];
+                // if in the circle, move a random amount based on closeness to mouse and add to moved array
+                if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
+                    curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
+                    curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+                    moved.push(curr);
+                }
+            }
+        }
+
+        // render the stage   
+        renderer.render(stage);
+        requestAnimationFrame( animate );
+    }
+
+    // when mouse is moved, update current mouse position only if the mouse hasn't been clicked
+    function onMouseMove(event) {
+        if (!mouseClicked) {
+            mouseCurr.x = event.data.global.x;
+            mouseCurr.y = event.data.global.y;
+        }
+    }
+
+    // when mouse is clicked update the mouseClicked boolean and current mouse position
+    function onMouseDown(event) {
+        console.log("mouse");
+        mouseClicked = !mouseClicked;
+        mouseCurr.x = event.data.global.x;
+        mouseCurr.y = event.data.global.y;
+    }
+
+    // return true/false if test point is in given circle (defined by center and radius)
+    function pointInCircle(centerX, centerY, radius, testPointX, testPointY) {
+        if ((testPointX - centerX)*(testPointX - centerX) + (testPointY - centerY)*(testPointY - centerY) < radius*radius) {
+            return true
+        }
+        return false;
+    }
+
+    // when corresponding button is clicked, update radius scale
+    function changeRadius(radius) {
+        if (Number(radius) && Number(radius) > 0) {
+            RADIUS_SCALE = Number(radius);
+        }
+    }
+
+    // when corresponding button is clicked, update square size
+    function changeSquareSize(newSize) {
+        if (Number(newSize) && Number(newSize) > 0) {
+            for (var i = stage.children.length - 1; i >= 0; i--) {
+                stage.removeChild(stage.children[i]);
+            };
+            if (Number(newSize) === 1) {
+                SQ_SIZE = 2;
+            }
+            else { 
+                SQ_SIZE = Number(newSize);
+
+            }
+            initializeSquares();
+        }
+    }
+
+    // when corresponding button is clicked, update width
+    function changeWidth(newWidth) {
+        if (Number(newWidth) && Number(newWidth) > 0) {
+            newWidth = Math.floor(Number(newWidth));
+            WIDTH = newWidth;
+            for (var i = stage.children.length - 1; i >= 0; i--) {
+                stage.removeChild(stage.children[i]);
+            };
+            initializeSquares();
+            renderer.resize(WIDTH, HEIGHT);
+        }
+    }
+
+    // when corresponding button is clicked, update height
+    function changeHeight(newHeight) {
+        if (Number(newHeight) && Number(newHeight) > 0) {
+            newHeight = Math.floor(Number(newHeight));
+            HEIGHT = newHeight;
+            for (var i = stage.children.length - 1; i >= 0; i--) {
+                stage.removeChild(stage.children[i]);
+            };
+            initializeSquares();
+            renderer.resize(WIDTH, HEIGHT);
+        }
+    }
+    </script>
+
+    </body>
+</html>
