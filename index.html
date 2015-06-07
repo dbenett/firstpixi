@@ -149,16 +149,19 @@
         }
         // only need to attach one mouse listener, and I've attached that to the upper
         // left corner box and and given it a hit area of the entire stage so user can click anywhere
-        squares[0][0].interactive = true;
-        squares[0][0].hitArea = new PIXI.Rectangle(0, 0, WIDTH, HEIGHT);
-        squares[0][0].on('mousemove', onMouseMove);
-        squares[0][0].on('touchmove', onMouseMove);
-        squares[0][0].on('mousedown', onMouseDown);
+        var mouseListener = new PIXI.Graphics();
+        mouseListener.drawRect(0, 0, SQ_SIZE, SQ_SIZE);
+        mouseListener.interactive = true;
+        mouseListener.hitArea = new PIXI.Rectangle(0, 0, WIDTH, HEIGHT);
+        mouseListener.on('mousemove', onMouseMove);
+        mouseListener.on('touchmove', onMouseMove);
+        mouseListener.on('mousedown', onMouseDown);
+        stage.addChild(mouseListener);
     }
 
 
-    /*var filterStrength = 20;
-    var frameTime = 0, lastLoop = new Date, thisLoop;*/
+    var filterStrength = 20;
+    var frameTime = 0, lastLoop = new Date, thisLoop;
 
     // runs every frame to animate
     function animate() {
@@ -178,21 +181,19 @@
             var maxX = Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares.length ? Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares.length;
             var minY = Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
             var maxY = Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares[0].length ? Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares[0].length;
-            // check all boxes in that square to see if they are in the circl
-            if (!(moved.length >= squares.length * squares[0].length) || migraine) {
-                for (var p = minX; p < maxX; p++) {
-                    for (var i = minY; i < maxY; i++) {
-                        var curr = squares[p][i];
-                        // if in the circle, move a random amount based on closeness to mouse and add to moved array
-                        if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
-                            if (migraine)
-                            {
-                                curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
-                                curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
-                                moved.push(curr);
-                            }
-                            if (curr.position.x == 0 && curr.position.y == 0)  
-                                moved.push(curr);
+            for (var p = minX; p < maxX; p++) {
+                for (var i = minY; i < maxY; i++) {
+                    var curr = squares[p][i];
+                    // if in the circle, move a random amount based on closeness to mouse and add to moved array
+                    if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
+                        if (migraine)
+                        {
+                            curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
+                            curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+                            moved.push(curr);
+                        }
+                        if (curr.position.x == 0 && curr.position.y == 0)  {
+                            moved.push(curr);
                         }
                     }
                 }
@@ -203,15 +204,21 @@
         {
             for (var i = 0; i < moved.length; i++)
             {
-                curr = moved[i];
-                curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/(SQ_SIZE*SQ_SIZE);
-                curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/(SQ_SIZE*SQ_SIZE);
+                moved[i].position.x += Math.random()* -2 * (mouseCurr.x - moved[i].absX)/(SQ_SIZE*SQ_SIZE);
+                moved[i].position.y += Math.random()* -2 * (mouseCurr.y - moved[i].absY)/(SQ_SIZE*SQ_SIZE);
+
+                // if square has moved more than twice width or height away from its starting place, remove it from things to draw/worry about
+                if (Math.abs(moved[i].position.x) > 2 * WIDTH || Math.abs(moved[i].position.y) > 2 * HEIGHT) {
+                    stage.removeChild(moved[i]);
+                    moved.splice(i, 1);
+                    i--;
+                }
             }
         }
 
-        /*var thisFrameTime = (thisLoop=new Date) - lastLoop;
+        var thisFrameTime = (thisLoop=new Date) - lastLoop;
         frameTime+= (thisFrameTime - frameTime) / filterStrength;
-        lastLoop = thisLoop;*/
+        lastLoop = thisLoop;
 
         // render the stage   
         renderer.render(stage);
@@ -219,10 +226,12 @@
     }
 
 
-    /*var fpsOut = document.getElementById('fps');
+    var fpsOut = document.getElementById('fps');
+    var currFPS = 0;
     setInterval(function(){
-      fpsOut.innerHTML = (1000/frameTime).toFixed(1) + " fps";
-    },1000);*/
+        currFPS = (1000/frameTime).toFixed(1);
+        fpsOut.innerHTML = currFPS + " fps";
+    },1000);
 
     // when mouse is moved, update current mouse position only if the mouse hasn't been clicked
     function onMouseMove(event) {
@@ -271,7 +280,6 @@
             }
             else { 
                 SQ_SIZE = Number(newSize);
-
             }
             initializeSquares();
         }
