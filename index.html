@@ -41,6 +41,18 @@
           <input id="radius" type="text" class="form-control" placeholder="15">
         </div>
       </div>
+      <div class="col-lg-2">
+        <div class="dropdown">
+          <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+            Set Effect
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+            <li role="presentation"><a role="menuitem" tabindex="-1" onClick="setVisual('migraine')">Migraine</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" onClick="setVisual('explode')">Explode</a></li>
+          </ul>
+        </div>
+      </div>
     </div>
     <div class="row">
       <div class="col-lg-2">
@@ -59,6 +71,10 @@
           <input id="height" type="text" class="form-control" placeholder="500">
         </div>
       </div>
+      <div class="col-lg-2">
+        <button class="btn btn-default" type="button" onClick="reset()">Reset Squares</button>
+      </div>
+
     </div>
 
     <script>
@@ -70,6 +86,8 @@
     var HEIGHT = 500;
     var SQ_SIZE = 10;
     var RADIUS_SCALE = 15;
+    var migraine = true;
+    var explode = false;
 
     // create a renderer instance.
     var renderer = PIXI.autoDetectRenderer(WIDTH, HEIGHT);
@@ -95,6 +113,7 @@
     // fill up the squares 2d array as necessary for current width/height/size
     function initializeSquares() {
         squares = [];
+        moved = [];
         for (var p = 0; (p*SQ_SIZE) < WIDTH; p++) {
             squares[p] = [];
             for (var i = 0; (i * SQ_SIZE + SKY) < HEIGHT; i++) {
@@ -120,11 +139,14 @@
     // runs every frame to animate
     function animate() {
         // reset position of all squares that have moved -- simple operation
-        for (var i = 0; i < moved.length; i++) {
-            moved[i].position.x = 0;
-            moved[i].position.y = 0;
+        if (migraine)
+        {
+            for (var i = 0; i < moved.length; i++) {
+                moved[i].position.x = 0;
+                moved[i].position.y = 0;
+            }
+            moved = [];
         }
-        moved = [];
 
         // set mins and maxes based on the square of width and height 2r that contains the circle that will be effected
         var minX = Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
@@ -137,10 +159,23 @@
                 var curr = squares[p][i];
                 // if in the circle, move a random amount based on closeness to mouse and add to moved array
                 if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
-                    curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
-                    curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+                    if (migraine)
+                    {
+                        curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
+                        curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+                    }
                     moved.push(curr);
                 }
+            }
+        }
+
+        if (explode)
+        {
+            for (var i = 0; i < moved.length; i++)
+            {
+                curr = moved[i];
+                curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/(SQ_SIZE*SQ_SIZE);
+                curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/(SQ_SIZE*SQ_SIZE);
             }
         }
 
@@ -152,14 +187,18 @@
     // when mouse is moved, update current mouse position only if the mouse hasn't been clicked
     function onMouseMove(event) {
         if (!mouseClicked) {
-            mouseCurr.x = event.data.global.x;
-            mouseCurr.y = event.data.global.y;
+            if (event.data.global.x > 0 && event.data.global.x < WIDTH && event.data.global.y > 0 && event.data.global.y < HEIGHT) {
+                mouseCurr.x = event.data.global.x;
+                mouseCurr.y = event.data.global.y;
+            }
+            else {
+                mouseCurr = {x: -2*SQ_SIZE*RADIUS_SCALE, y:-2*SQ_SIZE*RADIUS_SCALE};
+            }
         }
     }
 
     // when mouse is clicked update the mouseClicked boolean and current mouse position
     function onMouseDown(event) {
-        console.log("mouse");
         mouseClicked = !mouseClicked;
         mouseCurr.x = event.data.global.x;
         mouseCurr.y = event.data.global.y;
@@ -177,6 +216,7 @@
     function changeRadius(radius) {
         if (Number(radius) && Number(radius) > 0) {
             RADIUS_SCALE = Number(radius);
+            mouseCurr = {x: -2*SQ_SIZE*RADIUS_SCALE, y:-2*SQ_SIZE*RADIUS_SCALE};
         }
     }
 
@@ -194,6 +234,17 @@
 
             }
             initializeSquares();
+        }
+    }
+
+    function setVisual(type) {
+        if (type === 'migraine') {
+            explode = false;
+            migraine = true;
+        }
+        if (type === 'explode') {
+            explode = true;
+            migraine = false;
         }
     }
 
@@ -221,6 +272,13 @@
             initializeSquares();
             renderer.resize(WIDTH, HEIGHT);
         }
+    }
+
+    function reset() {
+        for (var i = stage.children.length - 1; i >= 0; i--) {
+            stage.removeChild(stage.children[i]);
+        };
+        initializeSquares();
     }
     </script>
 
