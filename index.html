@@ -24,6 +24,7 @@
 
     </head>
     <body>
+    <div id='fps'> fps here </div>
     <div class="row">
       <div class="col-lg-2">
         <div class="input-group">
@@ -55,7 +56,7 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-lg-2">
+      <div class="form-group col-lg-2">
         <div class="input-group">
           <span class="input-group-btn">
             <button class="btn btn-default" type="button" onClick="changeWidth(document.getElementById('width').value)">Set Width</button>
@@ -77,9 +78,29 @@
 
     </div>
 
+
     <script>
+    var ENTER = 13;
+    // allows buttons to be activated by pressing of the enter key
+    $('#squareSize').keypress( function (e) {
+        if (e.keyCode === ENTER) 
+            changeSquareSize(document.getElementById('squareSize').value);
+    });
+    $('#radius').keypress( function (e) {
+        if (e.keyCode === ENTER) 
+            changeRadius(document.getElementById('radius').value)
+    });
+    $('#width').keypress( function (e) {
+        if (e.keyCode === ENTER) 
+            changeWidth(document.getElementById('width').value)
+    });
+    $('#height').keypress( function (e) {
+        if (e.keyCode === ENTER) 
+            changeHeight(document.getElementById('height').value)
+    });
+
     /* Danny Benett -- June 2015 
-       pixi.js visualization */
+    pixi.js visualization */
 
     // create a new instance of a pixi stage
     var WIDTH = 600;
@@ -136,6 +157,9 @@
     }
 
 
+    /*var filterStrength = 20;
+    var frameTime = 0, lastLoop = new Date, thisLoop;*/
+
     // runs every frame to animate
     function animate() {
         // reset position of all squares that have moved -- simple operation
@@ -148,23 +172,29 @@
             moved = [];
         }
 
-        // set mins and maxes based on the square of width and height 2r that contains the circle that will be effected
-        var minX = Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
-        var maxX = Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares.length ? Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares.length;
-        var minY = Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
-        var maxY = Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares[0].length ? Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares[0].length;
-        // check all boxes in that square to see if they are in the circl
-        for (var p = minX; p < maxX; p++) {
-            for (var i = minY; i < maxY; i++) {
-                var curr = squares[p][i];
-                // if in the circle, move a random amount based on closeness to mouse and add to moved array
-                if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
-                    if (migraine)
-                    {
-                        curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
-                        curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+        if (mouseCurr.x !== null) {
+            // set mins and maxes based on the square of width and height 2r that contains the circle that will be effected
+            var minX = Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.x - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
+            var maxX = Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares.length ? Math.ceil((mouseCurr.x + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares.length;
+            var minY = Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) >= 0 ? Math.floor((mouseCurr.y - SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : 0;
+            var maxY = Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) <= squares[0].length ? Math.ceil((mouseCurr.y + SQ_SIZE * RADIUS_SCALE)/SQ_SIZE) : squares[0].length;
+            // check all boxes in that square to see if they are in the circl
+            if (!(moved.length >= squares.length * squares[0].length) || migraine) {
+                for (var p = minX; p < maxX; p++) {
+                    for (var i = minY; i < maxY; i++) {
+                        var curr = squares[p][i];
+                        // if in the circle, move a random amount based on closeness to mouse and add to moved array
+                        if (pointInCircle(mouseCurr.x, mouseCurr.y, SQ_SIZE*RADIUS_SCALE, curr.absX, curr.absY)) {
+                            if (migraine)
+                            {
+                                curr.position.x += Math.random()* -1 * (mouseCurr.x - curr.absX)/SQ_SIZE;
+                                curr.position.y += Math.random()* -1 * (mouseCurr.y - curr.absY)/SQ_SIZE;
+                                moved.push(curr);
+                            }
+                            if (curr.position.x == 0 && curr.position.y == 0)  
+                                moved.push(curr);
+                        }
                     }
-                    moved.push(curr);
                 }
             }
         }
@@ -179,10 +209,20 @@
             }
         }
 
+        /*var thisFrameTime = (thisLoop=new Date) - lastLoop;
+        frameTime+= (thisFrameTime - frameTime) / filterStrength;
+        lastLoop = thisLoop;*/
+
         // render the stage   
         renderer.render(stage);
         requestAnimationFrame( animate );
     }
+
+
+    /*var fpsOut = document.getElementById('fps');
+    setInterval(function(){
+      fpsOut.innerHTML = (1000/frameTime).toFixed(1) + " fps";
+    },1000);*/
 
     // when mouse is moved, update current mouse position only if the mouse hasn't been clicked
     function onMouseMove(event) {
@@ -192,7 +232,7 @@
                 mouseCurr.y = event.data.global.y;
             }
             else {
-                mouseCurr = {x: -2*SQ_SIZE*RADIUS_SCALE, y:-2*SQ_SIZE*RADIUS_SCALE};
+                mouseCurr = {x: null, y:null};
             }
         }
     }
@@ -216,7 +256,7 @@
     function changeRadius(radius) {
         if (Number(radius) && Number(radius) > 0) {
             RADIUS_SCALE = Number(radius);
-            mouseCurr = {x: -2*SQ_SIZE*RADIUS_SCALE, y:-2*SQ_SIZE*RADIUS_SCALE};
+            mouseCurr = {x: null, y:null};
         }
     }
 
