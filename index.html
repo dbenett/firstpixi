@@ -204,8 +204,8 @@
         {
             for (var i = 0; i < moved.length; i++)
             {
-                moved[i].position.x += Math.random()* -2 * (mouseCurr.x - moved[i].absX)/(SQ_SIZE*SQ_SIZE);
-                moved[i].position.y += Math.random()* -2 * (mouseCurr.y - moved[i].absY)/(SQ_SIZE*SQ_SIZE);
+                moved[i].position.x += Math.random()* -2 * (mouseCurr.x - moved[i].absX)/(SQ_SIZE*5);
+                moved[i].position.y += Math.random()* -2 * (mouseCurr.y - moved[i].absY)/(SQ_SIZE*5);
 
                 // if square has moved more than twice width or height away from its starting place, remove it from things to draw/worry about
                 if (Math.abs(moved[i].position.x) > 2 * WIDTH || Math.abs(moved[i].position.y) > 2 * HEIGHT) {
@@ -271,16 +271,13 @@
     // when corresponding button is clicked, update square size
     function changeSquareSize(newSize) {
         if (Number(newSize) && Number(newSize) > 0) {
-            for (var i = stage.children.length - 1; i >= 0; i--) {
-                stage.removeChild(stage.children[i]);
-            };
             if (Number(newSize) === 1) {
                 SQ_SIZE = 2;
             }
             else { 
                 SQ_SIZE = Number(newSize);
             }
-            initializeSquares();
+            reset();
         }
     }
 
@@ -293,6 +290,7 @@
             explode = true;
             migraine = false;
         }
+        reset();
     }
 
     // when corresponding button is clicked, update width
@@ -300,10 +298,7 @@
         if (Number(newWidth) && Number(newWidth) > 0) {
             newWidth = Math.floor(Number(newWidth));
             WIDTH = newWidth;
-            for (var i = stage.children.length - 1; i >= 0; i--) {
-                stage.removeChild(stage.children[i]);
-            };
-            initializeSquares();
+            reset();
             renderer.resize(WIDTH, HEIGHT);
         }
     }
@@ -313,10 +308,7 @@
         if (Number(newHeight) && Number(newHeight) > 0) {
             newHeight = Math.floor(Number(newHeight));
             HEIGHT = newHeight;
-            for (var i = stage.children.length - 1; i >= 0; i--) {
-                stage.removeChild(stage.children[i]);
-            };
-            initializeSquares();
+            reset();
             renderer.resize(WIDTH, HEIGHT);
         }
     }
